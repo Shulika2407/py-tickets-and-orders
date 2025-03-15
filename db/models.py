@@ -67,7 +67,8 @@ class User(AbstractUser):
 
 class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE, null=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -78,26 +79,35 @@ class Order(models.Model):
 
 class Ticket(models.Model):
     movie_session = models.ForeignKey(
-        to=MovieSession, on_delete=models.CASCADE, related_name="tickets"
+        to=MovieSession, on_delete=models.CASCADE,
+        related_name="tickets"
     )
-    order = models.ForeignKey(to=Order, on_delete=models.CASCADE, related_name="tickets")
+    order = models.ForeignKey(to=Order, on_delete=models.CASCADE,
+                              related_name="tickets")
     row = models.IntegerField()
     seat = models.IntegerField()
 
     class Meta:
         constraints = [
-            UniqueConstraint(fields=["movie_session", "row", "seat"], name="unique_ticket_seat_constraint"),
+            UniqueConstraint(fields=["movie_session", "row", "seat"],
+                             name="unique_ticket_seat_constraint"),
         ]
 
     def clean(self):
         """ Проверяем, что место в зале действительно существует. """
         cinema_hall = self.movie_session.cinema_hall
-        if not (1 <= self.row <= cinema_hall.rows) or not (1 <= self.seat <= cinema_hall.seats_in_row):
-            raise ValidationError(f"Место ({self.row}, {self.seat}) выходит за границы зала {cinema_hall.name}")
+        if (not (1 <= self.row <= cinema_hall.rows)
+                or not (1 <= self.seat <= cinema_hall.seats_in_row)):
+            raise ValidationError(f"Место ({self.row},"
+                                  f" {self.seat})"
+                                  f" выходит за границы зала"
+                                  f" {cinema_hall.name}")
 
     def save(self, *args, **kwargs):
-        self.full_clean()  # Проверяем корректность данных перед сохранением
+        self.full_clean()
         return super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Ticket for {self.movie_session.movie.title} at {self.movie_session.show_time}, Row {self.row}, Seat {self.seat}"
+        return (f"Ticket for {self.movie_session.movie.title}"
+                f" at {self.movie_session.show_time},"
+                f" Row {self.row}, Seat {self.seat}")
